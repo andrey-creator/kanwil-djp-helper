@@ -7,12 +7,10 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-# ====================================================================================
-# 1. KONFIGURASI HALAMAN & CUSTOM CSS (TEMA NAVY BLUE & GOLD - KHAS INSTANSI)
-# ====================================================================================
+
 
 st.set_page_config(
-    page_title="Generator Narasi Nota Dinas & LPP - Kanwil DJP",
+    page_title="Narasi Nota Dinas & LPP - Kanwil DJP",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -155,9 +153,7 @@ Kanwil Direktorat Jenderal Pajak
 </div>
 """, unsafe_allow_html=True)
 
-# ====================================================================================
-# 2. DATA REFERENSI / MASTER DATA (DUMMY / DEFAULT)
-# ====================================================================================
+
 
 DAFTAR_KPP = [
     "KPP Pratama Contoh Satu",
@@ -216,9 +212,7 @@ DASAR_HUKUM_DEFAULT = (
     "yang berlaku"
 )
 
-# ====================================================================================
-# 3. FUNGSI UTILITAS
-# ====================================================================================
+
 
 def format_rupiah(nilai: float) -> str:
     """Mengubah nilai numerik menjadi format mata uang Rupiah Indonesia.
@@ -290,7 +284,7 @@ def terbilang(nilai: float) -> str:
     if nilai == 0:
         return "nol rupiah"
     hasil = _terbilang_angka(nilai).strip()
-    # Rapikan spasi ganda yang mungkin muncul dari proses rekursif
+
     hasil = " ".join(hasil.split())
     return f"{hasil} rupiah"
 
@@ -327,7 +321,7 @@ def hitung_tanggal_batas(hari_kerja: int) -> str:
     sisa = int(hari_kerja)
     while sisa > 0:
         hasil += timedelta(days=1)
-        if hasil.weekday() < 5:  # 0-4 = Senin-Jumat
+        if hasil.weekday() < 5:
             sisa -= 1
     return f"{hasil.day} {nama_bulan[hasil.month]} {hasil.year}"
 
@@ -347,9 +341,7 @@ def buat_nomor_draf() -> str:
     return f"ND-{now.strftime('%d%m%Y')}-{now.strftime('%H%M%S')}/PJ.KANWIL/{now.year}"
 
 
-# ====================================================================================
-# 4. TEMPLATE NARASI DEFAULT (DAPAT DIUBAH MELALUI MODUL 3)
-# ====================================================================================
+
 
 DEFAULT_TEMPLATE_PEMBUKA = """NOTA DINAS
 Nomor        : {nomor_draf}
@@ -390,9 +382,6 @@ Demikian nota dinas ini disampaikan untuk dapat ditindaklanjuti sebagaimana mest
 Hormat kami,
 {dari}"""
 
-# ====================================================================================
-# 5. INISIALISASI SESSION STATE
-# ====================================================================================
 
 def init_session_state():
     """Menginisialisasi seluruh nilai default pada session_state Streamlit,
@@ -412,9 +401,7 @@ def init_session_state():
 
 init_session_state()
 
-# ====================================================================================
-# 6. FUNGSI INTI PEMBUATAN NARASI
-# ====================================================================================
+
 
 def generate_narasi(data: dict) -> str:
     """Menyusun narasi Nota Dinas lengkap (pembuka + isi + penutup) berdasarkan
@@ -437,8 +424,7 @@ def generate_narasi(data: dict) -> str:
         try:
             bagian.append(template_teks.format(**data))
         except KeyError as e:
-            # Jika ada placeholder pada template kustom yang tidak dikenali,
-            # tampilkan pesan yang jelas alih-alih membuat aplikasi crash.
+
             bagian.append(
                 f"[GAGAL MEMPROSES TEMPLATE: placeholder {e} tidak ditemukan pada data]"
             )
@@ -486,9 +472,6 @@ def siapkan_data_narasi(
     }
 
 
-# ====================================================================================
-# 7. HEADER APLIKASI
-# ====================================================================================
 
 st.markdown("""
 <div class="app-header">
@@ -513,9 +496,7 @@ Kanwil Direktorat Jenderal Pajak
 </div>
 """, unsafe_allow_html=True)
 
-# ====================================================================================
-# 8. SIDEBAR NAVIGASI
-# ====================================================================================
+
 
 with st.sidebar:
     st.markdown("## Navigasi Sistem")
@@ -673,7 +654,6 @@ with st.form("form_single_wp"):
             )
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # ---------------- Detail Temuan & Indikasi ----------------
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.markdown("### 🔍 Detail Temuan & Indikasi")
         col4, col5 = st.columns(2)
@@ -706,7 +686,7 @@ with st.form("form_single_wp"):
             )
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # ---------------- Rekomendasi Tindak Lanjut ----------------
+
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.markdown("### 📌 Rekomendasi Tindak Lanjut (SE-05/PJ/2022)")
         col6, col7 = st.columns(2)
@@ -764,9 +744,6 @@ if st.session_state["hasil_narasi_single"]:
             )
 
 
-# ====================================================================================
-# 10. MODUL 2 - BATCH / MULTI-WP GENERATOR
-# ====================================================================================
 
 def _buat_file_csv_contoh() -> bytes:
     """Membuat file CSV contoh/dummy yang dapat diunduh pengguna sebagai
@@ -956,9 +933,7 @@ def modul_batch():
             )
 
 
-# ====================================================================================
-# 11. MODUL 3 - TEMPLATE & CUSTOMIZER NARASI
-# ====================================================================================
+
 
 def modul_template():
     """Merender antarmuka dan logika untuk Modul 3: Template & Customizer,
@@ -1039,9 +1014,6 @@ def modul_template():
         st.code(generate_narasi(data_contoh), language="text")
 
 
-# ====================================================================================
-# 12. ROUTING ANTAR MODUL
-# ====================================================================================
 
 if "Dashboard" in modul:
     modul_dashboard()
@@ -1054,18 +1026,3 @@ elif "Batch" in modul:
 
 else:
     modul_template()
-
-# ====================================================================================
-# 13. FOOTER
-# ====================================================================================
-
-st.markdown(
-    """
-    <div class="app-footer">
-        Generator Narasi Nota Dinas &amp; LPP — Kanwil DJP · Dibuat untuk mendukung efisiensi
-        administrasi pengawasan perpajakan · Seluruh draf wajib direviu oleh pejabat berwenang
-        sebelum diterbitkan sebagai dokumen resmi.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
