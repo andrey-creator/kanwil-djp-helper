@@ -1,26 +1,11 @@
-# -*- coding: utf-8 -*-
-"""
-====================================================================================
- GENERATOR NARASI NOTA DINAS & LAPORAN PENGAWASAN (LPP) KANWIL DJP
-====================================================================================
-Aplikasi berbasis Streamlit untuk mengotomatisasi penyusunan narasi/teks analisis
-pengawasan perpajakan secara formal, terstruktur, dan sesuai standar administrasi
-pengawasan DJP (mengacu pada SE-05/PJ/2022 tentang Pengawasan Wajib Pajak).
 
-Modul:
-    1. Single-WP Generator  -> analisis kasus per kasus (form interaktif)
-    2. Batch / Multi-WP     -> upload CSV/Excel, proses banyak WP sekaligus
-    3. Template & Customizer -> ubah format pembuka/isi/penutup Nota Dinas
-
-Dependensi: streamlit, pandas, datetime, io
-====================================================================================
-"""
 
 import io
 from datetime import date, datetime, timedelta
 
 import pandas as pd
 import streamlit as st
+import plotly.express as px
 
 # ====================================================================================
 # 1. KONFIGURASI HALAMAN & CUSTOM CSS (TEMA NAVY BLUE & GOLD - KHAS INSTANSI)
@@ -28,120 +13,147 @@ import streamlit as st
 
 st.set_page_config(
     page_title="Generator Narasi Nota Dinas & LPP - Kanwil DJP",
-    page_icon="📑",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-NAVY = "#002060"
-GOLD = "#FFC000"
-NAVY_LIGHT = "#0A3D91"
-GREY_BG = "#F4F6F9"
+NAVY = "#003366"
+GOLD = "#F4B400"
+WHITE = "#FFFFFF"
+LIGHT_BG = "#F5F7FA"
+TEXT_DARK = "#1F2937"
 
 CUSTOM_CSS = f"""
 <style>
-    /* ---------- Global ---------- */
-    .stApp {{
-        background-color: {GREY_BG};
-    }}
-    html, body, [class*="css"] {{
-        font-family: 'Segoe UI', 'Calibri', sans-serif;
-    }}
 
-    /* ---------- Header Utama ---------- */
-    .app-header {{
-        background: linear-gradient(90deg, {NAVY} 0%, {NAVY_LIGHT} 100%);
-        padding: 22px 30px;
-        border-radius: 10px;
-        border-left: 8px solid {GOLD};
-        margin-bottom: 22px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    }}
-    .app-header h1 {{
-        color: #FFFFFF;
-        font-size: 26px;
-        margin: 0;
-        font-weight: 700;
-    }}
-    .app-header p {{
-        color: {GOLD};
-        margin: 4px 0 0 0;
-        font-size: 14px;
-        font-weight: 500;
-        letter-spacing: 0.3px;
-    }}
+.stApp {{
+    background-color: #f5f7fa;
+}}
 
-    /* ---------- Sidebar ---------- */
-    section[data-testid="stSidebar"] {{
-        background-color: {NAVY};
-    }}
-    section[data-testid="stSidebar"] * {{
-        color: #FFFFFF !important;
-    }}
-    section[data-testid="stSidebar"] .stRadio label {{
-        font-size: 15px;
-    }}
-    section[data-testid="stSidebar"] hr {{
-        border-color: {GOLD};
-    }}
+.main-container {{
+    padding-top: 10px;
+}}
 
-    /* ---------- Section Card ---------- */
-    .section-card {{
-        background-color: #FFFFFF;
-        padding: 18px 22px;
-        border-radius: 10px;
-        border-top: 4px solid {GOLD};
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        margin-bottom: 18px;
-    }}
-    .section-card h3 {{
-        color: {NAVY};
-        font-size: 18px;
-        margin-top: 0;
-        border-bottom: 2px solid {GREY_BG};
-        padding-bottom: 8px;
-    }}
+.metric-card {{
+    background:white;
+    border-radius:12px;
+    padding:18px;
+    border-top:4px solid #F4B400;
+    box-shadow:0 3px 10px rgba(0,0,0,.08);
+}}
 
-    /* ---------- Badge Info ---------- */
-    .info-badge {{
-        display: inline-block;
-        background-color: {GOLD};
-        color: {NAVY};
-        font-weight: 700;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-size: 12px;
-        margin-bottom: 10px;
-    }}
+.stButton > button {{
+    background:#003366;
+    color:white;
+    border:none;
+    border-radius:8px;
+    font-weight:600;
+}}
 
-    /* ---------- Tombol ---------- */
-    .stButton>button, .stDownloadButton>button {{
-        background-color: {NAVY};
-        color: #FFFFFF;
-        border: 2px solid {NAVY};
-        border-radius: 6px;
-        font-weight: 600;
-        padding: 8px 22px;
-        transition: 0.2s;
-    }}
-    .stButton>button:hover, .stDownloadButton>button:hover {{
-        background-color: {GOLD};
-        color: {NAVY};
-        border: 2px solid {GOLD};
-    }}
+.stButton > button:hover {{
+    background:#004a8f;
+}}
 
-    /* ---------- Footer ---------- */
-    .app-footer {{
-        text-align: center;
-        color: #6b7280;
-        font-size: 12px;
-        margin-top: 30px;
-        padding-top: 12px;
-        border-top: 1px solid #d1d5db;
-    }}
+.metric-title {{
+    font-size: 13px;
+    color: #6b7280;
+}}
+
+.metric-value {{
+    font-size: 28px;
+    font-weight: 700;
+    color: {NAVY};
+}}
+
+.document-preview {{
+    width: 100%;
+    max-width: 900px;
+    margin:auto;
+    background:white;
+    padding:50px;
+    border-radius:10px;
+    box-shadow:0 0 20px rgba(0,0,0,.15);
+    min-height:800px;
+    white-space: pre-wrap;
+    line-height:1.8;
+    color:#222;
+}}
+
+.dashboard-card {{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}}
+
+.sidebar-title {{
+    color:white;
+    font-size:18px;
+    font-weight:700;
+}}
+
+section[data-testid="stSidebar"] {{
+    background: linear-gradient(
+        180deg,
+        #003366 0%,
+        #004080 100%
+    );
+}}
+
+section[data-testid="stSidebar"] * {{
+    color: white !important;
+}}
+
+.section-card {{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    margin-bottom:15px;
+    border-left:4px solid #F4B400;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}}
+
+.app-header{{
+    display:flex;
+    align-items:center;
+    gap:16px;
+
+    background:#003366;
+
+    padding:20px;
+
+    border-radius:12px;
+
+    color:white;
+
+    margin-bottom:20px;
+}}
+
+.header-logo{{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}}
+
 </style>
+
 """
-st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+st.markdown("""
+<div style="
+background:#003366;
+padding:20px;
+border-radius:12px;
+color:white;
+margin-bottom:20px;
+">
+<h2 style="margin:0;">
+Generator Narasi Nota Dinas & LPP
+</h2>
+<div style="opacity:.85;">
+Kanwil Direktorat Jenderal Pajak
+</div>
+</div>
+""", unsafe_allow_html=True)
 
 # ====================================================================================
 # 2. DATA REFERENSI / MASTER DATA (DUMMY / DEFAULT)
@@ -478,45 +490,160 @@ def siapkan_data_narasi(
 # 7. HEADER APLIKASI
 # ====================================================================================
 
-st.markdown(
-    """
-    <div class="app-header">
-        <h1>📑 Generator Narasi Nota Dinas &amp; Laporan Pengawasan (LPP)</h1>
-        <p>KANTOR WILAYAH DIREKTORAT JENDERAL PAJAK &nbsp;|&nbsp; Acuan: SE-05/PJ/2022 tentang Pengawasan Kepatuhan Wajib Pajak</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+st.markdown("""
+<div class="app-header">
+
+<div class="header-logo">
+<svg width="48" height="48" viewBox="0 0 24 24">
+<path d="M12 2L21 7V17L12 22L3 17V7L12 2Z"
+fill="#F4B400"/>
+</svg>
+</div>
+
+<div>
+<h2 style="margin:0;">
+Generator Narasi Nota Dinas & LPP
+</h2>
+
+<div style="opacity:.85;">
+Kanwil Direktorat Jenderal Pajak
+</div>
+</div>
+
+</div>
+""", unsafe_allow_html=True)
 
 # ====================================================================================
 # 8. SIDEBAR NAVIGASI
 # ====================================================================================
 
 with st.sidebar:
-    st.markdown("## 🧭 Navigasi Modul")
+    st.markdown("## Navigasi Sistem")
     modul = st.radio(
         label="Pilih Modul",
-        options=[
-            "1️⃣ Single-WP Generator",
-            "2️⃣ Batch / Multi-WP Generator",
-            "3️⃣ Template & Customizer Narasi",
-        ],
+    options=[
+    "Dashboard",
+    "Single-WP Generator",
+    "Batch Generator",
+    "Template Narasi",
+],
         label_visibility="collapsed",
     )
     st.markdown("---")
-    st.markdown(
-        """
-        **Tentang Aplikasi**
 
-        Aplikasi ini membantu Account Representative (AR) dan Tim Pengawas Kanwil DJP
-        menyusun draf narasi Nota Dinas hasil pengawasan kepatuhan Wajib Pajak secara
-        cepat, konsisten, dan sesuai standar administrasi.
 
-        *Catatan: seluruh draf yang dihasilkan wajib direviu kembali oleh pejabat
-        berwenang sebelum ditetapkan sebagai dokumen resmi.*
-        """
+def modul_dashboard():
+
+    st.subheader("Dashboard Pengawasan")
+
+    col1,col2,col3,col4 = st.columns(4)
+
+    with col1:
+        st.markdown("""
+        <div class='metric-card'>
+        <div class='metric-title'>Total Nota Dinas</div>
+        <div class='metric-value'>248</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+        <div class='metric-card'>
+        <div class='metric-title'>Total WP</div>
+        <div class='metric-value'>173</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown("""
+        <div class='metric-card'>
+        <div class='metric-title'>Total Potensi</div>
+        <div class='metric-value'>25,4 M</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col4:
+        st.markdown("""
+        <div class='metric-card'>
+        <div class='metric-title'>Jumlah KPP</div>
+        <div class='metric-value'>6</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    data_temuan = pd.DataFrame({
+        "Jenis":[
+            "Ekualisasi",
+            "Transfer Pricing",
+            "ILAP",
+            "Nondeductible"
+        ],
+        "Jumlah":[45,18,33,22]
+    })
+
+    fig1 = px.bar(
+        data_temuan,
+        x="Jenis",
+        y="Jumlah",
+        title="Jumlah Kasus per Jenis Temuan"
     )
 
+    st.plotly_chart(
+        fig1,
+        use_container_width=True
+    )
+
+    colA,colB = st.columns(2)
+
+    with colA:
+
+        fig2 = px.pie(
+            names=[
+                "WP Badan",
+                "WP OP"
+            ],
+            values=[
+                140,
+                33
+            ],
+            title="Komposisi Wajib Pajak"
+        )
+
+        st.plotly_chart(
+            fig2,
+            use_container_width=True
+        )
+
+    with colB:
+
+        data_kpp = pd.DataFrame({
+            "KPP":[
+                "KPP 1",
+                "KPP 2",
+                "KPP 3",
+                "KPP 4"
+            ],
+            "Kasus":[
+                35,
+                42,
+                21,
+                18
+            ]
+        })
+
+        fig3 = px.bar(
+            data_kpp,
+            x="KPP",
+            y="Kasus",
+            title="Kasus per KPP"
+        )
+
+        st.plotly_chart(
+            fig3,
+            use_container_width=True
+        )
+        
 # ====================================================================================
 # 9. MODUL 1 - SINGLE-WP GENERATOR
 # ====================================================================================
@@ -525,13 +652,13 @@ def modul_single_wp():
     """Merender antarmuka dan logika untuk Modul 1: analisis kasus per kasus
     (satu Wajib Pajak) melalui form input interaktif.
     """
-    st.markdown('<div class="info-badge">MODUL 1</div>', unsafe_allow_html=True)
-    st.subheader("Single-WP Generator — Analisis Kasus Per Kasus")
+st.markdown('<div class="info-badge">MODUL 1</div>', unsafe_allow_html=True)
+st.subheader("Single-WP Generator — Analisis Kasus Per Kasus")
 
-    with st.form("form_single_wp"):
+with st.form("form_single_wp"):
         # ---------------- Profil WP & Unit Kerja ----------------
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
-        st.markdown("### 👤 Profil WP & Unit Kerja")
+        st.markdown("### Profil WP & Unit Kerja")
         col1, col2, col3 = st.columns(3)
         with col1:
             nama_wp = st.text_input("Nama Wajib Pajak", value="PT Contoh Makmur Sejahtera")
@@ -593,7 +720,7 @@ def modul_single_wp():
 
         submitted = st.form_submit_button("🚀 Generate Narasi Nota Dinas")
 
-    if submitted:
+if submitted:
         if not nama_wp or not npwp_input:
             st.error("Nama Wajib Pajak dan NPWP wajib diisi.")
         else:
@@ -614,11 +741,18 @@ def modul_single_wp():
             )
             st.session_state["hasil_narasi_single"] = generate_narasi(data)
 
-    if st.session_state["hasil_narasi_single"]:
+if st.session_state["hasil_narasi_single"]:
         st.markdown("---")
         st.markdown("### 📄 Hasil Draf Narasi Nota Dinas")
         st.caption("Gunakan ikon salin (copy) pada pojok kanan atas kotak kode di bawah untuk menyalin teks.")
-        st.code(st.session_state["hasil_narasi_single"], language="text")
+        st.markdown(
+    f"""
+    <div class="document-preview">
+    {st.session_state["hasil_narasi_single"].replace(chr(10), "<br>")}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
         colA, colB = st.columns([1, 5])
         with colA:
@@ -793,7 +927,14 @@ def modul_batch():
             options=list(range(len(df_hasil))),
             format_func=lambda i: df_hasil.iloc[i].get("Nama WP", f"Baris {i+1}"),
         )
-        st.code(df_hasil.iloc[pilihan_preview]["Narasi Nota Dinas"], language="text")
+        st.markdown(
+    f"""
+    <div class="document-preview">
+    {df_hasil.iloc[pilihan_preview]["Narasi Nota Dinas"].replace(chr(10), "<br>")}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
         col1, col2 = st.columns(2)
         with col1:
@@ -902,10 +1043,15 @@ def modul_template():
 # 12. ROUTING ANTAR MODUL
 # ====================================================================================
 
-if modul.startswith("1"):
+if "Dashboard" in modul:
+    modul_dashboard()
+
+elif "Single" in modul:
     modul_single_wp()
-elif modul.startswith("2"):
+
+elif "Batch" in modul:
     modul_batch()
+
 else:
     modul_template()
 
