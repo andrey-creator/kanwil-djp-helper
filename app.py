@@ -304,7 +304,7 @@ def format_npwp(npwp_raw: str) -> str:
         )
     if len(digits) == 16:
         return f"{digits[0:4]}.{digits[4:8]}.{digits[8:12]}.{digits[12:16]}"
-    # Jika jumlah digit tidak sesuai standar, kembalikan apa adanya
+
     return npwp_raw
 
 
@@ -512,7 +512,7 @@ with st.sidebar:
     )
     st.markdown("---")
 
-
+"""
 def modul_dashboard():
 
     st.subheader("Dashboard Pengawasan")
@@ -625,9 +625,7 @@ def modul_dashboard():
             use_container_width=True
         )
         
-# ====================================================================================
-# 9. MODUL 1 - SINGLE-WP GENERATOR
-# ====================================================================================
+"""
 
 def modul_single_wp():
     """Merender antarmuka dan logika untuk Modul 1: analisis kasus per kasus
@@ -655,7 +653,7 @@ with st.form("form_single_wp"):
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
-        st.markdown("### 🔍 Detail Temuan & Indikasi")
+        st.markdown("###  Detail Temuan & Indikasi")
         col4, col5 = st.columns(2)
         with col4:
             jenis_indikasi = st.selectbox("Jenis Indikasi / Modus", JENIS_INDIKASI_LIST, index=0)
@@ -688,7 +686,7 @@ with st.form("form_single_wp"):
 
 
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
-        st.markdown("### 📌 Rekomendasi Tindak Lanjut (SE-05/PJ/2022)")
+        st.markdown("###  Rekomendasi Tindak Lanjut (SE-05/PJ/2022)")
         col6, col7 = st.columns(2)
         with col6:
             tindak_lanjut = st.selectbox("Pilihan Tindakan", TINDAK_LANJUT_LIST, index=0)
@@ -698,7 +696,7 @@ with st.form("form_single_wp"):
             )
         st.markdown("</div>", unsafe_allow_html=True)
 
-        submitted = st.form_submit_button("🚀 Generate Narasi Nota Dinas")
+        submitted = st.form_submit_button("Lanjut")
 
 if submitted:
         if not nama_wp or not npwp_input:
